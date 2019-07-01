@@ -1,0 +1,548 @@
+Script started on Tue 27 Feb 2019 04:27:29 PM EST
+tuser@tutor-vserver:~$ ssh wilsonho@useere[K[K[Krs.cs.umb.edu
+wilsonho@users.cs.umb.edu's password: 
+Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+18 packages can be updated.
+14 updates are security updates.
+
+New release '18.04.2 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+  Authorized users only.
+You have new mail.
+Last login: Tue Feb 26 16:11:32 2019 from 172.27.200.232
+wilsonho@itserver6:~$ ssh ulab
+wilsonho@ulab's password: 
+Last login: Tue Feb 26 16:13:15 2019 from itserver6.cs.um
+SunOS blade57.cs.umb.edu 5.8 Generic_117350-26 sun4u sparc SUNW,Sun-Blade-100
+
+  Authorized users only.
+You have new mail.
+blade57(1)% ls
+#hello.c#  cs110      cs220      cs310      examples
+bin        cs210      cs240      cs341
+blade57(2)% cd cs341/homework/mp1
+blade57(3)% ls
+cmds.c          makefile        slex.opc        tutor.lnx
+cmds.o          slex.c          syms            tutor.o
+cmds.opc        slex.h          tutor           tutor.opc
+discussion.txt  slex.o          tutor.c         usyms
+blade57(4)% tutor[K[K[K[K[Kls-[K -al
+total 120
+drwxr-sr-x   2 wilsonho     4096 Feb 26 16:28 .
+drwxr-sr-x   3 wilsonho     4096 Feb 20 21:12 ..
+-rw-r--r--   1 wilsonho     3585 Feb 25 23:27 cmds.c
+-rw-r--r--   1 wilsonho     6308 Feb 26 16:14 cmds.o
+-rw-r--r--   1 wilsonho     1368 Feb 26 16:14 cmds.opc
+-rw-r--r--   1 wilsonho     1097 Feb 26 15:37 discussion.txt
+-rw-r--r--   1 wilsonho     2781 Feb 20 21:42 makefile
+-rw-r--r--   1 wilsonho     2392 Feb 20 21:12 slex.c
+-rw-r--r--   1 wilsonho     1846 Feb 20 21:12 slex.h
+-rw-r--r--   1 wilsonho     3872 Feb 26 16:14 slex.o
+-rw-r--r--   1 wilsonho      473 Feb 26 16:14 slex.opc
+-rw-r--r--   1 wilsonho     2262 Feb 26 16:14 syms
+-rwxr-xr-x   1 wilsonho    14472 Feb 26 16:14 tutor
+-rw-r--r--   1 wilsonho     2210 Feb 20 21:12 tutor.c
+-rwxr-xr-x   1 wilsonho    29610 Feb 26 16:14 tutor.lnx
+-rw-r--r--   1 wilsonho     4096 Feb 26 16:14 tutor.o
+-rw-r--r--   1 wilsonho      725 Feb 26 16:14 tutor.opc
+-rw-r--r--   1 wilsonho     2031 Feb 26 16:14 usyms
+blade57(5)% cat slex.c
+/******************************************************************
+*
+*   file:   slex.c
+*   author: betty o'neil
+*   date:   ?
+*
+*   simple lexical analyzer, front part of a parser                   
+*   --compare to UNIX tool "lex", general lexical analyzer            
+*   gets a (space-delimited) token from linebuf and tries to match    
+*   it to one of the cmdtokens in the provided cmdtable             
+*
+*   accepts:       
+*         linebuf--string to get token from                         
+*         cmdtable--cmdtable to use                                 
+*   returns:                                                          
+*         *cnum_ptr--command # (offset in cmdtable) or -1 if no match
+*         *pos_ptr--new place in linebuf after token match          
+*
+*   improvements needed:
+*         make token matching case independent
+*         skip whitespace, not just blanks
+*
+*   revisions: 
+*     9/90 cleanup, convert function headers to ansi form
+*
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include "slex.h"               /* for definition of type cmd */
+
+int slex(char *linebuf,    /* string from user */
+         Cmd cmdtable[],   /* cmd table to use */
+         int *cnum_ptr,    /* returned command number */
+         int *pos_ptr)      /* returned new place in linebuf */
+{
+  int i = 0;
+  char token[MAXTOKENLEN];
+  int newpos;
+
+  if (gettoken(linebuf,token,&newpos)<0) /* get token from linebuf */
+    return -1;                  /* couldn't find token */
+
+  while ((cmdtable[i].cmdtoken != NULL)) {
+    if (strcmp(cmdtable[i].cmdtoken,token)==0) {
+        *cnum_ptr = i;          /* success--return command # */
+        *pos_ptr = newpos;      /* and where we got to in linebuf */
+        return 0;
+    }
+    else
+      i++;                      /* keep scanning table */
+  }
+  return -1;                    /* no match */
+}
+
+/******************************************************************
+ * get one space-delimited token from string in linebuf, also return 
+ * new position in string 
+ */
+int gettoken(char *linebuf, char *token, int *pos_ptr)
+{
+  int i = 0;
+  int j = 0;
+
+  while (linebuf[i] == ' ')
+    i++;                        /* skip blanks */
+  while (linebuf[i] != ' '&&linebuf[i]!='\0')
+    token[j++] = linebuf[i++];  /* copy chars to token */
+  if (j==0)
+    return -1;                  /* nothing there */
+  else
+    {
+      token[j] = '\0';          /* null-terminate token */
+      *pos_ptr = i;             /* return place in linebuf we got to */
+      return 0;                 /* success */
+    }
+}
+blade57(6)% cat tutor.c
+/******************************************************************
+*
+*   file:     tutor.c
+*   author:   eb
+*   date:     September, 1990
+*
+*   Driver for a "tutor" program to mimic and extend the MECB ROM TUTOR.
+* 
+*   built from betty o'neil's previous version
+*
+*   revisions:
+*   Jan '96: changed prompt to PC-tutor, now mimics floppy-based Tutor
+*/
+
+#include <stdio.h>
+#include "slex.h" 
+/* The preprocessor symbol SAPC is #defined in $pcinc/stdio.h.  This
+ * stdio.h is found by i386-gcc because of the -I flag in its compile command
+ * in the Makefile.  In the UNIX case, there is no such redirection,
+ * so the ordinary stdio.h is used, and it has no SAPC definition.
+ */
+#ifdef SAPC
+#define PROMPT "PC-tutor> "
+#else
+#define PROMPT "UNIX-tutor> "
+#endif
+int main(void);
+
+int main()
+{
+  int done = 0;
+  int cnum,linepos;
+  char linebuf[LINELEN];
+  Cmd *cp;
+
+  printf("     cmd    help message\n");
+  for(cp = cmds; cp->cmdtoken; cp++) 
+      printf("%8s    %s\n", cp->cmdtoken, cp->help);
+
+  while (!done) {
+    /* get cmd token from user by parsing first part of line in linebuf-- */
+    getcmd(linebuf,&cnum,&linepos);
+    /* call implementation routine for matched cmd-- */
+    /* (remaining part of line to parse starts at linebuf+linepos) */
+    done = cmds[cnum].cmdfn(&cmds[cnum], linebuf+linepos); 
+  }
+  return 0;
+}
+
+/***********************************************************************
+*
+*  getcmd 
+*
+* Better than scanf--read whole line in, parse resulting string.
+* Uses slex package to match cmd token in first part of linebuf 
+* and return command # and where to continue parsing.
+* Getcmd loops until user provides proper command, so no error return.
+*/
+void getcmd(char *linebuf, 
+             int *cnum_ptr,   /* returned command number */
+             int *pos_ptr     /* position in linebuf (after cmd token) */
+           )
+{
+  int done = 0;
+
+  while (!done) {
+     printf( PROMPT );
+     gets(linebuf);             /* read line from user, null terminate */
+     /* match cmd token to get cnum--call slex package to do lookup-- */
+     if (slex( linebuf, cmds, cnum_ptr, pos_ptr)==0) 
+         done = 1;      /* success in matching cmd */
+     else
+         printf(" No such command\n");
+  }
+}
+blade57(7)% cat cmds.c
+/******************************************************************
+*
+*   file:   cmds.c
+*   author: wilson ho  
+*   date:   2/26/18
+*
+*   semantic actions for commands called by tutor (cs341, hw2)
+*
+*   revisions:
+*      9/90  eb   cleanup, convert function declarations to ansi
+*      9/91  eb   changes so that this can be used for hw1
+*      9/02  re   minor changes to quit command
+*/
+/* the Makefile arranges that #include <..> searches in the right
+   places for these headers-- 200920*/
+
+#include <stdio.h>
+#include "slex.h"
+
+/*===================================================================*
+*
+*   Command table for tutor program -- an array of structures of type
+*   cmd -- for each command provide the token, the function to call when
+*   that token is found, and the help message.
+*
+*   slex.h contains the typdef for struct cmd, and declares the
+*   cmds array as extern to all the other parts of the program.
+*   Code in slex.c parses user input command line and calls the
+*   requested semantic action, passing a pointer to the cmd struct
+*   and any arguments the user may have entered.
+*
+*===================================================================*/
+
+PROTOTYPE int stop(Cmd *cp, char *arguments);
+PROTOTYPE int mem_display(Cmd *cp, char *arguments);
+PROTOTYPE int mem_set(Cmd *cp, char *arguments);
+PROTOTYPE int help(Cmd *cp, char *arguments);
+
+/* command table */
+
+Cmd cmds[] = {{"md",  mem_display, "Memory display: MD <addr>"},
+              {"ms",  mem_set, "Memory set: MS <addr> <value> "},
+              {"h",   help, "Help: H <command>"},
+              {"s",   stop,        "Stop"},
+              {NULL,  NULL,        NULL}};  /* null cmd to flag end of table */
+
+char xyz = 6;  /* test global variable  */
+char *pxyz = &xyz;  /* test pointer to xyz */
+/*===================================================================*
+*               command                 routines
+*
+*   Each command routine is called with 2 args, the remaining
+*   part of the line to parse and a pointer to the struct cmd for this
+*   command. Each returns 0 for continue or 1 for all-done.
+*
+*===================================================================*/
+
+int stop(Cmd *cp, char *arguments)
+{
+  return 1;                     /* all done flag */
+}
+
+/*===================================================================*
+*
+*   mem_display: display contents of 16 bytes in hex
+*
+*/
+
+int mem_display(Cmd *cp, char *arguments)
+{
+  int numprint = 0, address;
+  unsigned char *address_ptr;
+ 
+  sscanf(arguments, "%x", &address); 
+  address_ptr = (char *)address;
+ // printf("addressptr is ", address_ptr);
+ 
+  printf("Here is the address: %08x \n", address);
+  for(numprint = 0; numprint < 16; numprint++)
+        printf("%02x ", *address_ptr++);
+
+  address_ptr = (unsigned char *)address;
+  
+  for(numprint = 0; numprint < 16; numprint++)
+  {
+        if(*address_ptr > 0x20 && *address_ptr < 0x7f)
+                printf("%c", *address_ptr++);
+        else
+        {
+                printf(".");
+                address_ptr++;
+        }
+  }
+
+  printf("\n");   
+  printf("Reached mem_display, passed argument string: |%s|\n", arguments);
+  printf("        help message: %s\n", cp->help);
+  return 0;                     /* not done */
+}
+int mem_set(Cmd *cp, char *arguments)
+{
+  int value = 0, address;
+  char *address_ptr;
+  sscanf(arguments,"%x %x", &address, &value );
+  address_ptr = (char *)address;
+  *address_ptr = value;
+  return 0;
+}
+int help(Cmd *cp, char *arguments)
+{
+  char size[2];
+  int num = 0;
+  int length = sizeof(cmds)/sizeof(Cmd);
+  
+  sscanf(arguments, "%s", size);
+
+  for(num = 0; num < length -1; num++)
+        if((strcmp(cmds[num].cmdtoken, size)) ==0)
+                printf("%s\n", cmds[num].help);
+  return 0;
+}
+
+blade57(8)% cat discussion.txt
+1 testing my code was a very tedious process of using printf statements whenever my code had a bug or was displaying something it should not have.
+
+2 when calling and address that doesnt correspond to physical memory address it will print out a segmentation fault in UNIX or give an exception at EIP = 00100507: page fault in the SAPC
+
+3a xyz is stored in 00101e3c the value is 06 00 00 00 3c 1e 10 00 28 82 06 00 00 00 00 00
+ 
+ b pxyz is stored in 00101e40 the value is 3c 1e 10 00 28 82 06 00 00 00 00 00 00 00 00 00. these addresses are similar but in a different order due to little endian
+ 
+ c cmds array is stored in address 00101e00
+ d unix it crashes and on sapc it changes the way it creates the stop command
+
+4 the code resides in 00100100 - 00101e00. data resides in 00101e00 - 00101fcc
+
+5 on unix you get a segmentation fault. on sapc exception 14 at EIP=00100507 page fault
+
+6 ESP: 000578a9; i reg command was not found and couldnt be used when trying to find the sp and rd values
+
+7 i have tried using md values < 5 digits and values << 5 digits to see the output results which would usually crash the program.
+~                               
+blade57(9)% make clean
+rm -f *.o *.opc *.syms *.usyms *.lnx tutor core syms usyms
+blade57(10)% maket[K tutor
+gcc -Wall -Wno-implicit -Wshadow -g -I/home/wilsonho/cs341/homework/mp1   -c -o /home/wilsonho/cs341/homework/mp1/tutor.o /home/wilsonho/cs341/homework/mp1/tutor.c
+gcc -Wall -Wno-implicit -Wshadow -g -I/home/wilsonho/cs341/homework/mp1   -c -o /home/wilsonho/cs341/homework/mp1/slex.o /home/wilsonho/cs341/homework/mp1/slex.c
+gcc -Wall -Wno-implicit -Wshadow -g -I/home/wilsonho/cs341/homework/mp1   -c -o cmds.o cmds.c
+gcc -g -o tutor /home/wilsonho/cs341/homework/mp1/tutor.o /home/wilsonho/cs341/homework/mp1/slex.o cmds.o
+rm -f usyms; nm -vpt x tutor > usyms
+blade57(11)% make
+/groups/ulab/bin/i386-gcc -Wall -Wno-implicit -Wshadow -I/groups/ulab/pcdev/include -I/home/wilsonho/cs341/homework/mp1 -c -o cmds.opc cmds.c
+/groups/ulab/bin/i386-gcc -Wall -Wno-implicit -Wshadow -I/groups/ulab/pcdev/include -I/home/wilsonho/cs341/homework/mp1 -c -o /home/wilsonho/cs341/homework/mp1/tutor.opc /home/wilsonho/cs341/homework/mp1/tutor.c
+/groups/ulab/bin/i386-gcc -Wall -Wno-implicit -Wshadow -I/groups/ulab/pcdev/include -I/home/wilsonho/cs341/homework/mp1 -c -o /home/wilsonho/cs341/homework/mp1/slex.opc /home/wilsonho/cs341/homework/mp1/slex.c
+/groups/ulab/bin/i386-ld -N -Ttext 1000e0 -o tutor.lnx \
+        /groups/ulab/pcdev/lib/startup0.opc /groups/ulab/pcdev/lib/startup.opc \
+        /home/wilsonho/cs341/homework/mp1/tutor.opc /home/wilsonho/cs341/homework/mp1/slex.opc cmds.opc /groups/ulab/pcdev/lib/libc.a
+rm -f syms;/groups/ulab/bin/i386-nm -n tutor.lnx>syms
+blade57(12)% tutor
+     cmd    help message
+      md    Memory display: MD <addr>
+      ms    Memory set: MS <addr> <value> 
+       h    Help: H <command>
+       s    Stop
+UNIX-tutor> md 10000
+Here is the address: 00010000 
+7f 45 4c 46 01 02 01 00 00 00 00 00 00 00 00 00 .ELF............
+Reached mem_display, passed argument string: | 10000|
+        help message: Memory display: MD <addr>
+UNIX-tutor> md 2131c
+Here is the address: 0002131c 
+06 00 00 00 00 02 13 1c 00 00 00 00 ff ff ff ff ................
+Reached mem_display, passed argument string: | 2131c|
+        help message: Memory display: MD <addr>
+UNIX-tutor> md s 2131c 8
+UNIX-tutor> md 2131c
+Here is the address: 0002131c 
+08 00 00 00 00 02 13 1c 00 00 00 00 ff ff ff ff ................
+Reached mem_display, passed argument string: | 2131c|
+        help message: Memory display: MD <addr>
+UNIX-tutor> h md
+Memory display: MD <addr>
+UNIX-tutor> s
+blade57(13)% logout
+Connection to ulab closed.
+wilsonho@itserver6:~$ logout
+Connection to users.cs.umb.edu closed.
+tuser@tutor-vserver:~$ scp[K[K[Kmtip -f tutor.lnx
+For command help, type ~?
+For help on args, rerun without args
+Code starts at 0x100100
+Using board # 1 
+Please type <CR> to confirm console setting: 
+Setting console dev to COM2Console: colour EGA+ 80x25
+COM1 at 0x03f8 (irq = 4) is a 16550A
+COM2 at 0x02f8 (irq = 3) is a 16550A
+
+                 Welcome to UMB Tutor for the PC
+   UMB Tutor is a 32-bit protected-mode PC debugger/downloader,
+       based on Linux, UMB Tutor for m68k, and remote gdb.
+UMB Tutor is free software and you are welcome to distribute copies
+of it under certain conditions.  There is no warranty for this program.
+The copyright and warranty provisions follow the Gnu general public
+license, available for view in gdb and elsewhere.  Full sources available.
+--bugs, suggestions, questions to eoneil@cs.umb.edu
+
+Exception 3 at EIP=00057a9b: Breakpoint
+Tutor> go 100100
+Exception 13 at EIP=0010010c: General protection violation
+Tutor> ~downloading tutor.lnx
+
+........Done.
+
+Download done, setting EIP to 100100.
+Tutor> go 100100
+     cmd    help message
+      md    Memory display: MD <addr>
+      ms    Memory set: MS <addr> <value> 
+       h    Help: H <command>
+       s    Stop
+PC-tutor> md 10000
+Here is the address: 00010000 
+ea 05 00 c0 07 8c c8 8e d8 8e c0 8e d0 31 e4 fb .............1..
+Reached mem_display, passed argument string: | 10000|
+        help message: Memory display: MD <addr>
+PC-tutor> md 2131c
+Here is the address: 0002131c 
+75 a0 83 ec 0c 8d 83 11 fe ff ff 50 e8 a7 f9 ff u..........P....
+Reached mem_display, passed argument string: | 2131c|
+        help message: Memory display: MD <addr>
+PC-tutor> ms 2131c 8
+PC-tutor> md 2131c
+Here is the address: 0002131c 
+08 a0 83 ec 0c 8d 83 11 fe ff ff 50 e8 a7 f9 ff ...........P....
+Reached mem_display, passed argument string: | 2131c|
+        help message: Memory display: MD <addr>
+PC-tutor> h md
+Memory display: MD <addr>
+PC-tutor> h ms
+Memory set: MS <addr> <value> 
+PC-tutor> s
+Exception 6 at EIP=0000000f: Invalid opcode
+Tutor> exit
+No such command: exit, use h command for help
+Tutor> Suspend handler: Suspending mtip, board #1--please return to it (fg command) as soon as possible
+
+[1]+  Stopped                 mtip -f tutor.lnx
+tuser@tutor-vserver:~$ l[Kexit
+exit
+There are stopped jobs.
+tuser@tutor-vserver:~$ ls
+[0m[01;34minclude[0m  [01;34mtestaout[0m  [01;34mtestelf[0m       test.lnx  tutor.c    tutor.o    typescript
+[01;34mlib[0m      test.c    testelf.syms  test.s    [01;32mtutor.lnx[0m  tutor.opc
+tuser@tutor-vserver:~$ vi typescript
+[1;25r[?25h[?8c[?25h[?0c[27m[24m[0m[H[J[?25l[?1c[25;1H"typescript" [noeol] 433L, 16384C[1;1HScript started on Tue 26 Feb 2019 04:27:29 PM EST
+tuser@tutor-vserver:~$ ssh wilsonho@useere[1m[34m^H^[[0m[K[1m[34m^H^[[0m[K[1m[34m^H^[[0m[Krs.cs.umb.edu[1m[34m^M[0m
+wilsonho@users.cs.umb.edu's password: [1m[34m^M[0m
+Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)[1m[34m^M
+^M[0m
+ * Documentation:  https://help.ubuntu.com[1m[34m^M[0m
+ * Management:     https://landscape.canonical.com[1m[34m^M[0m
+ * Support:[8;19H https://ubuntu.com/advantage[1m[34m^M
+^M[0m
+18 packages can be updated.[1m[34m^M[0m
+14 updates are security updates.[1m[34m^M
+^M[0m
+New release '18.04.2 LTS' available.[1m[34m^M[0m
+Run 'do-release-upgrade' to upgrade to it.[1m[34m^M
+^M
+^M[0m
+  Authorized users only.[1m[34m^M[0m
+You have new mail.[1m[34m^M[0m
+Last login: Tue Feb 26 16:11:32 2019 from 172.27.200.232[1m[34m^M^M[0m
+wilsonho@itserver6:~$ ssh ulab[1m[34m^M[0m
+wilsonho@ulab's password: [1m[34m^M[0m
+Last login: Tue Feb 26 16:13:15 2019 from itserver6.cs.um[1m[34m^M^M[0m
+SunOS blade57.cs.umb.edu 5.8 Generic_117350-26 sun4u sparc SUNW,Sun-Blade-100[1m[34m^M
+^M[0m[25;63H1,1[25;77HTop[1;1H[?25h[?0c[?25l[?1c[25;63H2[2;1H[?25h[?0c[?25l[?1c[25;63H3[3;1H[?25h[?0c[?25l[?1c[25;63H4[4;1H[?25h[?0c[?25l[?1c[25;63H5[5;1H[?25h[?0c[?25l[?1c[25;63H6[6;1H[?25h[?0c[?25l[?1c[25;63H7[7;1H[?25h[?0c[?25l[?1c[25;63H8[8;1H[?25h[?0c[?25l[?1c[25;63H9[9;1H[?25h[?0c[?25l[?1c[25;63H10,1[10;1H[?25h[?0c[?25l[?1c[25;64H1[11;1H[?25h[?0c[?25l[?1c[25;64H2[12;1H[?25h[?0c[?25l[?1c[25;64H3[13;1H[?25h[?0c[?25l[?1c[25;64H4[14;1H[?25h[?0c[?25l[?1c[25;64H5[15;1H[?25h[?0c[?25l[?1c[25;64H6[16;1H[?25h[?0c[?25l[?1c[25;64H7[17;1H[?25h[?0c[?25l[?1c[25;64H8[18;1H[?25h[?0c[?25l[?1c[25;64H9[19;1H[?25h[?0c[?25l[?1c[25;63H20[20;1H[?25h[?0c[?25l[?1c[25;64H1[21;1H[?25h[?0c[?25l[?1c[25;64H2[22;1H[?25h[?0c[?25l[?1c[25;64H3[23;1H[?25h[?0c[?25l[?1c[25;64H4[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;2H Authorized users only.[1m[34m^M[0m[25;1H[K[25;63H25,1[25;78H0%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1HYou have new mail.[1m[34m^M[0m[25;63H[K[25;63H26,1[25;78H0%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hblade57(1)% ls[1m[34m^M^M[0m[25;63H[K[25;63H27,1[25;78H0%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H#hello.c#  cs110      cs220      cs310      examples[1m[34m^M[0m[25;63H[K[25;63H28,1[25;78H0%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hbin[24;11H cs210      cs240      cs341[1m[34m^M[0m[25;63H[K[25;63H29,1[25;78H1%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hblade57(2)% cd cs341/homework/mp1[1m[34m^M^M[0m[25;63H[K[25;63H30,1[25;78H1%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hblade57(3)% ls[1m[34m^M^M[0m[25;63H[K[25;63H31,1[25;78H1%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hcmds.c[24;16H makefile[24;32H slex.opc[24;48H tutor.lnx[1m[34m^M[0m[25;63H[K[25;63H32,1[25;78H1%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hcmds.o[24;16H slex.c[24;32H syms[24;48H tutor.o[1m[34m^M[0m[25;63H[K[25;63H33,1[25;78H2%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hcmds.opc[24;16H slex.h[24;32H tutor[24;48H tutor.opc[1m[34m^M[0m[25;63H[K[25;63H34,1[25;78H2%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hdiscussion.txt  slex.o[24;32H tutor.c[24;48H usyms[1m[34m^M[0m[25;63H[K[25;63H35,1[25;78H2%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hblade57(4)% tutor[1m[34m^H^[[0m[K[1m[34m^H^[[0m[K[1m[34m^H^[[0m[K[1m[34m^H^[[0m[K[1m[34m^H^[[0m[K[1m[34m^G^G^G[0mls-[1m[34m^H^[[0m[K -al[1m[34m^M^M[0m[25;63H[K[25;63H36,1[25;78H2%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Htotal 120[1m[34m^M[0m[25;63H[K[25;63H37,1[25;78H3%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hdrwxr-sr-x   2 wilsonho     4096 Feb 26 16:28 .[1m[34m^M[0m[25;63H[K[25;63H38,1[25;78H3%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hdrwxr-sr-x   3 wilsonho     4096 Feb 20 21:12 ..[1m[34m^M[0m[25;63H[K[25;63H39,1[25;78H3%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     3585 Feb 25 23:27 cmds.c[1m[34m^M[0m[25;63H[K[25;63H40,1[25;78H3%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     6308 Feb 26 16:14 cmds.o[1m[34m^M[0m[25;63H[K[25;63H41,1[25;78H4%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     1368 Feb 26 16:14 cmds.opc[1m[34m^M[0m[25;63H[K[25;63H42,1[25;78H4%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     1097 Feb 26 15:37 discussion.txt[1m[34m^M[0m[25;63H[K[25;63H43,1[25;78H4%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     2781 Feb 20 21:42 makefile[1m[34m^M[0m[25;63H[K[25;63H44,1[25;78H4%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     2392 Feb 20 21:12 slex.c[1m[34m^M[0m[25;63H[K[25;63H45,1[25;78H5%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     1846 Feb 20 21:12 slex.h[1m[34m^M[0m[25;63H[K[25;63H46,1[25;78H5%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     3872 Feb 26 16:14 slex.o[1m[34m^M[0m[25;63H[K[25;63H47,1[25;78H5%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho      473 Feb 26 16:14 slex.opc[1m[34m^M[0m[25;63H[K[25;63H48,1[25;78H5%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     2262 Feb 26 16:14 syms[1m[34m^M[0m[25;63H[K[25;63H49,1[25;78H6%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rwxr-xr-x   1 wilsonho    14472 Feb 26 16:14 tutor[1m[34m^M[0m[25;63H[K[25;63H50,1[25;78H6%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     2210 Feb 20 21:12 tutor.c[1m[34m^M[0m[25;63H[K[25;63H51,1[25;78H6%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rwxr-xr-x   1 wilsonho    29610 Feb 26 16:14 tutor.lnx[1m[34m^M[0m[25;63H[K[25;63H52,1[25;78H6%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     4096 Feb 26 16:14 tutor.o[1m[34m^M[0m[25;63H[K[25;63H53,1[25;78H7%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho      725 Feb 26 16:14 tutor.opc[1m[34m^M[0m[25;63H[K[25;63H54,1[25;78H7%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H-rw-r--r--   1 wilsonho     2031 Feb 26 16:14 usyms[1m[34m^M[0m[25;63H[K[25;63H55,1[25;78H7%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1Hblade57(5)% cat slex.c[1m[34m^M^M[0m[25;63H[K[25;63H56,1[25;78H7%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H/******************************************************************[1m[34m^M[0m[25;63H[K[25;63H57,1[25;78H8%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[1m[34m^M[0m[25;63H[K[25;63H58,1[25;78H8%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   file:   slex.c[1m[34m^M[0m[25;63H[K[25;63H59,1[25;78H8%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   author: betty o'neil[1m[34m^M[0m[25;63H[K[25;63H60,1[25;78H8%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   date:   ?[1m[34m^M[0m[25;63H[K[25;63H61,1[25;78H9%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[1m[34m^M[0m[25;63H[K[25;63H62,1[25;78H9%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   simple lexical analyzer, front part of a parser[24;70H [1m[34m^M[0m[25;63H[K[25;63H63,1[25;78H9%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   --compare to UNIX tool "lex", general lexical analyzer[24;70H [1m[34m^M[0m[25;63H[K[25;63H64,1[25;78H9%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   gets a (space-delimited) token from linebuf and tries to match    [1m[34m^M[0m[25;63H[K[25;63H65,1[25;77H10%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   it to one of the cmdtokens in the provided cmdtable[24;68H [1m[34m^M[0m[25;63H[K[25;63H66,1[25;77H10%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[1m[34m^M[0m[25;63H[K[25;63H67,1[25;77H10%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   accepts:       [1m[34m^M[0m[25;63H[K[25;63H68,1[25;77H10%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[24;10H linebuf--string to get token from[24;68H [1m[34m^M[0m[25;63H[K[25;63H69,1[25;77H11%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[24;10H cmdtable--cmdtable to use[24;68H [1m[34m^M[0m[25;63H[K[25;63H70,1[25;77H11%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   returns:[24;70H [1m[34m^M[0m[25;63H[K[25;63H71,1[25;77H11%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[24;10H *cnum_ptr--command # (offset in cmdtable) or -1 if no match[1m[34m^M[0m[25;63H[K[25;63H72,1[25;77H11%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[24;10H *pos_ptr--new place in linebuf after token match[24;68H [1m[34m^M[0m[25;63H[K[25;63H73,1[25;77H11%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[1m[34m^M[0m[25;63H[K[25;63H74,1[25;77H12%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   improvements needed:[1m[34m^M[0m[25;63H[K[25;63H75,1[25;77H12%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[24;10H make token matching case independent[1m[34m^M[0m[25;63H[K[25;63H76,1[25;77H12%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[24;10H skip whitespace, not just blanks[1m[34m^M[0m[25;63H[K[25;63H77,1[25;77H12%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[1m[34m^M[0m[25;63H[K[25;63H78,1[25;77H13%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*   revisions: [1m[34m^M[0m[25;63H[K[25;63H79,1[25;77H13%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*     9/90 cleanup, convert function headers to ansi form[1m[34m^M[0m[25;63H[K[25;63H80,1[25;77H13%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*[1m[34m^M[0m[25;63H[K[25;63H81,1[25;77H13%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H*/[1m[34m^M[0m[25;63H[K[25;63H82,1[25;77H14%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H[1m[34m^M[0m[25;63H[K[25;63H83,1[25;77H14%[24;1H[?25h[?0c[?25l[?1c[1;24r[24;1H
+[1;25r[24;1H#include <stdio.h>[1m[34m^M[0m[25;63H[K[25;63H84,1[25;77H14%[24;1H[?2

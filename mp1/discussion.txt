@@ -1,0 +1,19 @@
+1 testing my code was a very tedious process of using printf statements whenever my code had a bug or was displaying something it should not have.
+
+2 when calling and address that doesnt correspond to physical memory address it will print out a segmentation fault in UNIX or give an exception at EIP = 00100507: page fault in the SAPC
+
+3a xyz is stored in 00101e3c the value is 06 00 00 00 3c 1e 10 00 28 82 06 00 00 00 00 00
+ 
+ b pxyz is stored in 00101e40 the value is 3c 1e 10 00 28 82 06 00 00 00 00 00 00 00 00 00. these addresses are similar but in a different order due to little endian
+ 
+ c cmds array is stored in address 00101e00
+ d unix it crashes and on sapc it changes the way it creates the stop command
+
+4 the code resides in 00100100 - 00101e00. data resides in 00101e00 - 00101fcc
+
+5 on unix you get a segmentation fault. on sapc exception 14 at EIP=00100507 page fault
+
+6 ESP: 000578a9; i reg command was not found and couldnt be used when trying to find the sp and rd values
+
+7 i have tried using md values < 5 digits and values << 5 digits to see the output results which would usually crash the program.
+~                               
